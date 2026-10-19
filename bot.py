@@ -7,7 +7,6 @@ from datetime import datetime
 from PIL import Image, ImageDraw, ImageFont
 from dotenv import load_dotenv
 
-# Load environment variables (Render uses Environment tab)
 load_dotenv()
 
 # ─── CONFIG ─────────────────────────────────────────────────────────────────────
@@ -15,10 +14,9 @@ CHARACTER = os.getenv("CHARACTER_PROMPT", "neon-haired cyberpunk girl")
 NICHE = os.getenv("NICHE", "1980s retro futuristic streetwear")
 OUTPUT_DIR = os.getenv("OUTPUT_DIR", "./generated")
 
-# Ensure folder exists (Render filesystem is ephemeral but writable)
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-# ─── SCENARIO GENERATOR ─────────────────────────────────────────────────────────
+# ─── SCENARIOS ──────────────────────────────────────────────────────────────────
 SCENARIOS = [
     "driving a retro hovercar through neon rain",
     "playing arcade games in a dimly lit arcade",
@@ -31,9 +29,9 @@ SCENARIOS = [
 def get_random_scenario():
     return random.choice(SCENARIOS)
 
-# ─── AI IMAGE GENERATOR (Replicate API) ─────────────────────────────────────────
+# ─── IMAGE GENERATION (Replicate) ───────────────────────────────────────────────
 def generate_image(prompt: str) -> str:
-    url = "https://api.replicate.com/v1/models/black-forest-labs/flux-schnell/predictions"
+    url = "https://api.replicate.com/v1/models/black-forest-labs/flux-1.1/predictions"
     headers = {
         "Authorization": f"Token {os.getenv('REPLICATE_API_KEY')}",
         "Content-Type": "application/json"
@@ -50,7 +48,6 @@ def generate_image(prompt: str) -> str:
     response.raise_for_status()
     prediction_url = response.json()["urls"]["get"]
 
-    # Poll until image is ready
     while True:
         status_resp = requests.get(prediction_url, headers=headers)
         data = status_resp.json()
@@ -69,7 +66,7 @@ def generate_image(prompt: str) -> str:
 
         time.sleep(5)
 
-# ─── AI CAPTION GENERATOR (OpenAI API) ──────────────────────────────────────────
+# ─── CAPTION GENERATION (OpenAI) ────────────────────────────────────────────────
 def generate_caption() -> str:
     from openai import OpenAI
     client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
@@ -88,7 +85,7 @@ def generate_caption() -> str:
 
     return response.choices[0].message.content.strip()
 
-# ─── TEXT OVERLAY (Merch) ───────────────────────────────────────────────────────
+# ─── MERCH TEXT OVERLAY ─────────────────────────────────────────────────────────
 def add_merch_text(img_path: str) -> str:
     img = Image.open(img_path).convert("RGB")
     draw = ImageDraw.Draw(img)
@@ -112,20 +109,63 @@ def add_merch_text(img_path: str) -> str:
     img.save(merch_path)
     return merch_path
 
-# ─── REDBUBBLE UPLOAD ───────────────────────────────────────────────────────────
-def upload_to_reddishb(img_path: str, title: str, tags: list):
-    url = "https://api.redbubble.net/v1/images"
-    headers = {"Authorization": f"Bearer {os.getenv('REDDISHB_API_KEY')}"}
+# ─── REDBUBBLE PRIVATE API UPLOADER ────────────────────────────────────────────
+RB_SESSION = os.getenv("RB_SESSION")
+RB_OPENID = os.getenv("RB_OPENID")
+RB_REFRESH = os.getenv("RB_REFRESH")
 
-    with open(img_path, "rb") as f:
-        files = {"image": f}
-        data = {"title": title, "tags": ",".join(tags)}
-        resp = requests.post(url, headers=headers, files=files, data=data)
-        resp.raise_for_status()
+RB_HEADERS = {
+    "Cookie": f"_rb_session4={RB_SESSION}; open_id_token={RB_OPENID}; refresh_token={RB_REFRESH}",
+    "User-Agent": "Mozilla/5.0",
+    "Accept": "application/json",
+}
 
-        print(f"Uploaded to Redbubble: {resp.json().get('id')}")
+def rb_upload_image(img_path: str):
+    url = "https://www.redbubble.com/studio/items/upload"
+    files = {"file": open(img_path, "rb")}
 
-# ─── INSTAGRAM POST ─────────────────────────────────────────────────────────────
+    response = requests.post(url, headers=RB_HEADERS, files=files)
+    if response.status_code != 200:
+        raise Exception(f"Redbubble upload failed: {response.text}")
+
+    data = response.json()
+    item_id = data["id"]
+    print("Uploaded image. Item ID:", item_id)
+    return item_id
+
+def rb_update_metadata(item_id: str, title: str, tags: list):
+    url = f"https://www.redbubble.com/studio/items/{item_id}/update"
+    payload = {
+        "title": title,
+        "tags": tags,
+        "mediaType": "design",
+        "isMatureContent": False,
+    }
+
+    response = requests.post(url, headers=RB_HEADERS, json=payload)
+    if response.status_code != 200:
+        raise Exception(f"Metadata update failed: {response.text}")
+
+    print("Updated metadata.")
+    return True
+
+def rb_publish(item_id: str):
+    url = f"https://www.redbubble.com/studio/items/{item_id}/publish"
+    response = requests.post(url, headers=RB_HEADERS)
+    if response.status_code != 200:
+        raise Exception(f"Publish failed: {response.text}")
+
+    print("Published design.")
+    return True
+
+def upload_to_redbubble(img_path: str, title: str, tags: list):
+    print("Uploading to Redbubble...")
+    item_id = rb_upload_image(img_path)
+    rb_update_metadata(item_id, title, tags)
+    rb_publish(item_id)
+    print("Redbubble upload complete.")
+
+# ─── INSTAGRAM POST ────────────────────────────────────────────────────────────
 def post_to_instagram(img_path: str, caption: str):
     url = "https://graph.instagram.com/me/media"
     headers = {"Authorization": f"Bearer {os.getenv('INSTAGRAM_ACCESS_TOKEN')}"}
@@ -143,7 +183,7 @@ def post_to_instagram(img_path: str, caption: str):
 
     print(f"Posted to Instagram: {res2.json().get('id')}")
 
-# ─── MAIN DAILY TASK (Single Execution) ─────────────────────────────────────────
+# ─── MAIN DAILY TASK ───────────────────────────────────────────────────────────
 def daily_task():
     print("Running Infinite Persona Engine...")
 
@@ -157,7 +197,7 @@ def daily_task():
 
         merch_img = add_merch_text(raw_img)
 
-        upload_to_reddishb(
+        upload_to_redbubble(
             merch_img,
             f"AI Cyberpunk Art - Day {datetime.now().day}",
             ["cyberpunk", "retro", "ai art", "digital design", "streetwear"]
@@ -170,6 +210,6 @@ def daily_task():
     except Exception as e:
         print(f"Error: {e}")
 
-# ─── Render Entry Point ─────────────────────────────────────────────────────────
+# ─── ENTRY POINT ───────────────────────────────────────────────────────────────
 if __name__ == "__main__":
     daily_task()
