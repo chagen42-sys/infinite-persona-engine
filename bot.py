@@ -50,9 +50,28 @@ SCENARIOS = [
 ]
 
 
+def default_tags():
+    return [
+        "cyberpunk",
+        "synthwave",
+        "retrofuturism",
+        "neon",
+        "scifi",
+        "digitalart",
+        "arcade",
+        "future",
+        "vaporwave",
+        "retrogaming",
+        "cyberpunkart",
+        "wallart",
+        "aesthetic",
+        "streetwear",
+        "aiart"
+    ]
+
+
 def random_scenario():
     return random.choice(SCENARIOS)
-
 
 # ──────────────────────────────────────────────────────
 # IMAGE GENERATION
@@ -129,25 +148,24 @@ def generate_image(prompt):
 
 
 # ──────────────────────────────────────────────────────
-# METADATA GENERATION
+# GPT METADATA GENERATION
 # ──────────────────────────────────────────────────────
 
 def generate_metadata(scenario):
 
     prompt = f"""
-You are creating metadata for AI art.
+You are writing metadata for a Printify product.
 
 Scenario:
 {scenario}
 
-Return JSON only.
+Return ONLY valid JSON.
 
 Format:
 
 {{
-  "title": "...",
-  "caption": "...",
-  "tags": ["tag1","tag2","tag3"]
+  "title": "",
+  "description": ""
 }}
 """
 
@@ -162,19 +180,21 @@ Format:
         temperature=0.8
     )
 
-    content = response.choices[0].message.content.strip()
-
     try:
-        return json.loads(content)
+        metadata = json.loads(
+            response.choices[0].message.content
+        )
+
+        metadata["tags"] = default_tags()
+
+        return metadata
+
     except Exception:
+
         return {
-            "title": "Untitled AI Artwork",
-            "caption": content,
-            "tags": [
-                "ai",
-                "art",
-                "digital"
-            ]
+            "title": "Cyberpunk Artwork",
+            "description": "AI generated cyberpunk artwork.",
+            "tags": default_tags()
         }
 
 
@@ -247,8 +267,8 @@ def main():
     print("\nTitle:")
     print(metadata["title"])
 
-    print("\nCaption:")
-    print(metadata["caption"])
+    print("\nDescription:")
+    print(metadata["description"])
 
     print("\nTags:")
     print(", ".join(metadata["tags"]))
