@@ -1,0 +1,26 @@
+services:
+  - name: infinite-persona-engine-1
+    type: web
+    env: docker
+    plan: starter
+    dockerfilePath: ./Dockerfile
+    autoDeploy: true
+    envVars:
+      - key: REPLICATE_API_KEY
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: INSTAGRAM_ACCESS_TOKEN
+        sync: false
+      - key: RB_SESSION
+        sync: false
+      - key: RB_OPENID
+        sync: false
+      - key: RB_REFRESH
+        sync: false
+      - key: CHARACTER_PROMPT
+        value: "neon-haired cyberpunk girl"
+      - key: NICHE
+        value: "1980s retro futuristic streetwear"
+      - key: OUTPUT_DIR
+        value: "./generated"
