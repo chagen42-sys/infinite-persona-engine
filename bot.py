@@ -5,19 +5,16 @@ import requests
 from datetime import datetime
 from PIL import Image, ImageDraw, ImageFont
 from dotenv import load_dotenv
+from playwright.sync_api import sync_playwright
 
 load_dotenv()
 
-from playwright.sync_api import sync_playwright
-
-# ─── CONFIG ─────────────────────────────────────────────────────────────────────
 CHARACTER = os.getenv("CHARACTER_PROMPT", "neon-haired cyberpunk girl")
 NICHE = os.getenv("NICHE", "1980s retro futuristic streetwear")
 OUTPUT_DIR = os.getenv("OUTPUT_DIR", "./generated")
 
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-# ─── SCENARIOS ──────────────────────────────────────────────────────────────────
 SCENARIOS = [
     "driving a retro hovercar through neon rain",
     "playing arcade games in a dimly lit arcade",
@@ -30,7 +27,6 @@ SCENARIOS = [
 def get_random_scenario():
     return random.choice(SCENARIOS)
 
-# ─── IMAGE GENERATION (Replicate) ───────────────────────────────────────────────
 def generate_image(prompt: str) -> str:
     url = "https://api.replicate.com/v1/models/black-forest-labs/flux-schnell/predictions"
 
@@ -58,7 +54,10 @@ def generate_image(prompt: str) -> str:
 
         if status == "succeeded":
             image_url = data["output"][0]
-            img_path = os.path.join(OUTPUT_DIR, f"{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg")
+            img_path = os.path.join(
+                OUTPUT_DIR,
+                f"{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
+            )
             img_data = requests.get(image_url).content
             with open(img_path, "wb") as f:
                 f.write(img_data)
@@ -69,7 +68,6 @@ def generate_image(prompt: str) -> str:
 
         time.sleep(5)
 
-# ─── CAPTION GENERATION (OpenAI) ────────────────────────────────────────────────
 def generate_caption() -> str:
     from openai import OpenAI
     client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
@@ -88,7 +86,6 @@ def generate_caption() -> str:
 
     return response.choices[0].message.content.strip()
 
-# ─── MERCH TEXT OVERLAY ─────────────────────────────────────────────────────────
 def add_merch_text(img_path: str) -> str:
     img = Image.open(img_path).convert("RGB")
     draw = ImageDraw.Draw(img)
@@ -112,7 +109,6 @@ def add_merch_text(img_path: str) -> str:
     img.save(merch_path)
     return merch_path
 
-# ─── REDBUBBLE UPLOAD (Playwright) ─────────────────────────────────────────────
 RB_SESSION = os.getenv("RB_SESSION")
 RB_OPENID = os.getenv("RB_OPENID")
 RB_REFRESH = os.getenv("RB_REFRESH")
@@ -124,7 +120,6 @@ def upload_to_redbubble(img_path: str, title: str, tags: list):
         browser = p.chromium.launch(headless=True)
         context = browser.new_context()
 
-        # Inject cookies so you're already logged in
         cookies = [
             {
                 "name": "_rb_session4",
@@ -154,41 +149,31 @@ def upload_to_redbubble(img_path: str, title: str, tags: list):
         context.add_cookies(cookies)
 
         page = context.new_page()
-
-        # Go to studio upload page
         page.goto("https://www.redbubble.com/studio/promote", wait_until="networkidle")
 
-        # Wait for file input and upload image
         file_input = page.locator("input[type='file']")
         file_input.set_input_files(img_path)
-
-        # Wait for upload to finish (rough heuristic)
         page.wait_for_timeout(15000)
 
-        # Set title
         title_input = page.locator("input[name='title']")
         if title_input.count() > 0:
             title_input.fill(title)
 
-        # Set tags (comma-separated)
         tags_input = page.locator("textarea[name='tags']")
         if tags_input.count() > 0:
             tags_input.fill(", ".join(tags))
 
-        # Click publish button (selector may need tweaking)
         publish_button = page.get_by_role("button", name="Publish")
         if publish_button.count() > 0:
             publish_button.click()
         else:
             print("Publish button not found; check selectors.")
-        
-        page.wait_for_timeout(10000)
 
+        page.wait_for_timeout(10000)
         browser.close()
 
     print("Redbubble upload (Playwright) complete.")
 
-# ─── INSTAGRAM POST ────────────────────────────────────────────────────────────
 def post_to_instagram(img_path: str, caption: str):
     url = "https://graph.instagram.com/me/media"
     headers = {"Authorization": f"Bearer {os.getenv('INSTAGRAM_ACCESS_TOKEN')}"}
@@ -206,7 +191,6 @@ def post_to_instagram(img_path: str, caption: str):
 
     print(f"Posted to Instagram: {res2.json().get('id')}")
 
-# ─── MAIN DAILY TASK ───────────────────────────────────────────────────────────
 def daily_task():
     print("Running Infinite Persona Engine...")
 
@@ -233,6 +217,5 @@ def daily_task():
     except Exception as e:
         print(f"Error: {e}")
 
-# ─── ENTRY POINT ───────────────────────────────────────────────────────────────
 if __name__ == "__main__":
     daily_task()

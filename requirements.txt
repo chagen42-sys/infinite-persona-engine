@@ -1,5 +1,5 @@
-playwright
 requests
 python-dotenv
 Pillow
 openai
+playwright
