@@ -4,3 +4,4 @@ replicate
 Pillow
 schedule
 python-dotenv
+playwright 

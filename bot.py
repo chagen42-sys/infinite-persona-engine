@@ -1,5 +1,4 @@
 import os
-import json
 import time
 import random
 import requests
@@ -8,6 +7,8 @@ from PIL import Image, ImageDraw, ImageFont
 from dotenv import load_dotenv
 
 load_dotenv()
+
+from playwright.sync_api import sync_playwright
 
 # ─── CONFIG ─────────────────────────────────────────────────────────────────────
 CHARACTER = os.getenv("CHARACTER_PROMPT", "neon-haired cyberpunk girl")
@@ -111,61 +112,81 @@ def add_merch_text(img_path: str) -> str:
     img.save(merch_path)
     return merch_path
 
-# ─── REDBUBBLE PRIVATE API UPLOADER ────────────────────────────────────────────
+# ─── REDBUBBLE UPLOAD (Playwright) ─────────────────────────────────────────────
 RB_SESSION = os.getenv("RB_SESSION")
 RB_OPENID = os.getenv("RB_OPENID")
 RB_REFRESH = os.getenv("RB_REFRESH")
 
-RB_HEADERS = {
-    "Cookie": f"_rb_session4={RB_SESSION}; open_id_token={RB_OPENID}; refresh_token={RB_REFRESH}",
-    "User-Agent": "Mozilla/5.0",
-    "Accept": "application/json",
-}
-
-def rb_upload_image(img_path: str):
-    url = "https://www.redbubble.com/studio/items/upload"
-    files = {"file": open(img_path, "rb")}
-
-    response = requests.post(url, headers=RB_HEADERS, files=files)
-    if response.status_code != 200:
-        raise Exception(f"Redbubble upload failed: {response.text}")
-
-    data = response.json()
-    item_id = data["id"]
-    print("Uploaded image. Item ID:", item_id)
-    return item_id
-
-def rb_update_metadata(item_id: str, title: str, tags: list):
-    url = f"https://www.redbubble.com/studio/items/{item_id}/update"
-    payload = {
-        "title": title,
-        "tags": tags,
-        "mediaType": "design",
-        "isMatureContent": False,
-    }
-
-    response = requests.post(url, headers=RB_HEADERS, json=payload)
-    if response.status_code != 200:
-        raise Exception(f"Metadata update failed: {response.text}")
-
-    print("Updated metadata.")
-    return True
-
-def rb_publish(item_id: str):
-    url = f"https://www.redbubble.com/studio/items/{item_id}/publish"
-    response = requests.post(url, headers=RB_HEADERS)
-    if response.status_code != 200:
-        raise Exception(f"Publish failed: {response.text}")
-
-    print("Published design.")
-    return True
-
 def upload_to_redbubble(img_path: str, title: str, tags: list):
-    print("Uploading to Redbubble...")
-    item_id = rb_upload_image(img_path)
-    rb_update_metadata(item_id, title, tags)
-    rb_publish(item_id)
-    print("Redbubble upload complete.")
+    print("Uploading to Redbubble via Playwright...")
+
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        context = browser.new_context()
+
+        # Inject cookies so you're already logged in
+        cookies = [
+            {
+                "name": "_rb_session4",
+                "value": RB_SESSION,
+                "domain": "www.redbubble.com",
+                "path": "/",
+                "httpOnly": True,
+                "secure": True
+            },
+            {
+                "name": "open_id_token",
+                "value": RB_OPENID,
+                "domain": ".redbubble.com",
+                "path": "/",
+                "httpOnly": True,
+                "secure": True
+            },
+            {
+                "name": "refresh_token",
+                "value": RB_REFRESH,
+                "domain": ".redbubble.com",
+                "path": "/",
+                "httpOnly": True,
+                "secure": True
+            }
+        ]
+        context.add_cookies(cookies)
+
+        page = context.new_page()
+
+        # Go to studio upload page
+        page.goto("https://www.redbubble.com/studio/promote", wait_until="networkidle")
+
+        # Wait for file input and upload image
+        file_input = page.locator("input[type='file']")
+        file_input.set_input_files(img_path)
+
+        # Wait for upload to finish (rough heuristic)
+        page.wait_for_timeout(15000)
+
+        # Set title
+        title_input = page.locator("input[name='title']")
+        if title_input.count() > 0:
+            title_input.fill(title)
+
+        # Set tags (comma-separated)
+        tags_input = page.locator("textarea[name='tags']")
+        if tags_input.count() > 0:
+            tags_input.fill(", ".join(tags))
+
+        # Click publish button (selector may need tweaking)
+        publish_button = page.get_by_role("button", name="Publish")
+        if publish_button.count() > 0:
+            publish_button.click()
+        else:
+            print("Publish button not found; check selectors.")
+        
+        page.wait_for_timeout(10000)
+
+        browser.close()
+
+    print("Redbubble upload (Playwright) complete.")
 
 # ─── INSTAGRAM POST ────────────────────────────────────────────────────────────
 def post_to_instagram(img_path: str, caption: str):
