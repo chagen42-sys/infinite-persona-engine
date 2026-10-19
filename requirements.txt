@@ -1,7 +1,5 @@
+playwright
 requests
-openai
-replicate
-Pillow
-schedule
 python-dotenv
-playwright 
+Pillow
+openai
