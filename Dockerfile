@@ -1,8 +1,8 @@
 FROM python:3.11-slim
 
-# System deps for Playwright
+# Install system dependencies for Playwright
 RUN apt-get update && \
-    apt-get install -y \
+    apt-get install -y --no-install-recommends \
         wget \
         curl \
         git \
@@ -30,14 +30,16 @@ RUN apt-get update && \
 
 WORKDIR /app
 
-# Copy requirements and install
+# Copy requirements first
 COPY requirements.txt .
+
+# Install Python deps
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Install Playwright browsers
 RUN python -m playwright install --with-deps
 
-# Copy app code
+# Copy the rest of your app
 COPY . .
 
 ENV PYTHONUNBUFFERED=1
