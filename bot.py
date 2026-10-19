@@ -41,37 +41,138 @@ client = OpenAI(api_key=OPENAI_API_KEY)
 # ──────────────────────────────────────────────────────
 
 SCENARIOS = [
-    "driving a retro hovercar through neon rain",
-    "playing arcade games in a dimly lit arcade",
-    "sipping synthetic coffee at a rooftop bar",
-    "walking past holographic advertisements",
-    "tuning a vintage synth in a garage",
-    "hacking a glowing mainframe"
+
+    # TURBO / STREET BUILDS
+    "a giant turbocharged Nissan GT-R launching flames at night",
+    "a twin-turbo Toyota Supra parked under neon city lights",
+    "a highly modified street racer making a full boost pull",
+    "an anti-lag equipped drift car shooting flames",
+    "a turbocharged import car at a late night street meet",
+
+    # DRIFTING
+    "a professional drift car sliding through thick tire smoke",
+    "a Nissan Silvia drifting through an industrial district",
+    "multiple drift cars tandem drifting around a racetrack",
+    "a widebody drift car entering a corner at high speed",
+    "a drift car lighting up the rear tires during sunset",
+
+    # DRAG RACING
+    "a twin-turbo drag car launching off the starting line",
+    "a Pro Mod drag car lifting the front wheels",
+    "a drag race under bright track lights at night",
+    "a nitrous-powered muscle car at the drag strip",
+    "a drag racing showdown between two heavily modified cars",
+
+    # MUSCLE CARS
+    "a supercharged Dodge Challenger doing a burnout",
+    "a classic Chevrolet Camaro cruising through downtown",
+    "a modern Ford Mustang with a massive blower",
+    "a heavily modified muscle car making a quarter mile run",
+    "a blacked-out Dodge Charger beneath storm clouds",
+
+    # SUPERCARS
+    "a Lamborghini Aventador driving through mountain roads",
+    "a Ferrari hypercar parked in front of a luxury hotel",
+    "a McLaren speeding through a futuristic cityscape",
+    "a line of exotic supercars at a private car show",
+    "a supercar illuminated by neon reflections",
+
+    # HYPERCARS
+    "a Bugatti hypercar reaching incredible speeds",
+    "a Koenigsegg hypercar parked beside a glass skyscraper",
+    "a futuristic hypercar racing through a desert highway",
+    "a carbon fiber hypercar under dramatic lighting",
+    "a hypercar accelerating through a tunnel at night",
+
+    # JDM CULTURE
+    "a lineup of modified JDM legends under neon lights",
+    "a heavily customized Mitsubishi Evo on a mountain pass",
+    "a Mazda RX-7 parked beside glowing city streets",
+    "a classic Skyline cruising through Tokyo-inspired scenery",
+    "a Japanese street racing scene after rain",
+
+    # OFF-ROADING
+    "a lifted truck climbing a rocky mountain trail",
+    "a 4x4 vehicle crossing a river deep in the wilderness",
+    "an off-road truck covered in mud after a trail ride",
+    "a Jeep crawling over massive boulders",
+    "a rugged overland vehicle exploring remote terrain",
+
+    # MUDDING
+    "a lifted diesel truck blasting through a mud pit",
+    "an off-road competition truck covered in mud",
+    "a 4x4 throwing mud high into the air",
+    "a muddy trail ride through dense forest terrain",
+    "a monster truck conquering an extreme mud bog",
+
+    # DIRT BIKES
+    "a dirt bike rider flying over a motocross jump",
+    "a motocross race happening during sunset",
+    "a dirt bike tearing through a muddy track",
+    "a freestyle motocross rider performing an aerial trick",
+    "a motocross bike kicking up dirt around a berm",
+
+    # SPORT BIKES
+    "a sport bike rider leaning through a mountain corner",
+    "a superbike parked under city lights at night",
+    "a high-speed motorcycle race on a professional circuit",
+    "a custom sport bike with aggressive styling",
+    "a superbike rider accelerating out of a corner",
+
+    # COMBINED CAR CULTURE
+    "an epic automotive festival featuring supercars and drift cars",
+    "a sunset car meet packed with modified performance vehicles",
+    "a line of boosted imports and muscle cars",
+    "a cinematic scene showing the evolution of performance cars",
+    "a gathering of racers, tuners, and gearheads celebrating car culture"
+
+]
 ]
 
 
 def default_tags():
     return [
-        "cyberpunk",
-        "synthwave",
-        "retrofuturism",
-        "neon",
-        "scifi",
-        "digitalart",
-        "arcade",
-        "future",
-        "vaporwave",
-        "retrogaming",
-        "cyberpunkart",
-        "wallart",
-        "aesthetic",
-        "streetwear",
-        "aiart"
+        "turbo",
+        "turbocharged",
+        "supercharger",
+        "boosted",
+        "performance",
+        "horsepower",
+        "streetracing",
+        "dragracing",
+        "drift",
+        "drifting",
+        "burnout",
+        "jdm",
+        "importtuner",
+        "musclecar",
+        "supercar",
+        "hypercar",
+        "exoticcars",
+        "sportscar",
+        "racecar",
+        "trackday",
+        "motorsports",
+        "carculture",
+        "carenthusiast",
+        "automotive",
+        "fastcars",
+        "gearhead",
+        "offroad",
+        "offroading",
+        "4x4",
+        "mudding",
+        "liftedtrucks",
+        "rockcrawling",
+        "utv",
+        "atv",
+        "dirtbike",
+        "sportbike",
+        "motorcycle",
+        "superbike",
+        "bikelife",
+        "racinglife"
     ]
-
-
-def random_scenario():
-    return random.choice(SCENARIOS)
 
 # ──────────────────────────────────────────────────────
 # IMAGE GENERATION
