@@ -31,12 +31,13 @@ def get_random_scenario():
 
 # ─── IMAGE GENERATION (Replicate) ───────────────────────────────────────────────
 def generate_image(prompt: str) -> str:
-    url = "url = "https://api.replicate.com/v1/models/black-forest-labs/flux-schnell/predictions"
-"
+    url = "https://api.replicate.com/v1/models/black-forest-labs/flux-schnell/predictions"
+
     headers = {
         "Authorization": f"Token {os.getenv('REPLICATE_API_KEY')}",
         "Content-Type": "application/json"
     }
+
     payload = {
         "input": {
             "prompt": f"{CHARACTER}, {prompt}, highly detailed, cinematic lighting, 16:9 aspect ratio",
